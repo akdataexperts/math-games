@@ -70,67 +70,96 @@ function buildSubHint(a: number, b: number, answer: number, hasBorrow: boolean):
   return lines;
 }
 
-function genAddNoCarry(): VerticalMathQuestion {
+// --- Vertical mode: 3-digit numbers (100-999) ---
+
+function genVerticalAddNoCarry(): VerticalMathQuestion {
   let a: number, b: number;
   do {
     a = randInt(100, 899);
     b = randInt(100, 899);
   } while (checkCarryAdd(a, b) || a + b > 999);
-
-  const mode: MathMode = Math.random() < 0.5 ? "vertical" : "horizontal";
   const answer = a + b;
-  return {
-    a, b, op: "+", answer, mode, hasCarry: false,
-    hint: buildAddHint(a, b, answer, false),
-  };
+  return { a, b, op: "+", answer, mode: "vertical", hasCarry: false, hint: buildAddHint(a, b, answer, false) };
 }
 
-function genAddWithCarry(): VerticalMathQuestion {
+function genVerticalAddWithCarry(): VerticalMathQuestion {
   let a: number, b: number;
   do {
     a = randInt(100, 899);
     b = randInt(100, 899);
   } while (!checkCarryAdd(a, b) || a + b > 9999);
-
-  const mode: MathMode = Math.random() < 0.5 ? "vertical" : "horizontal";
   const answer = a + b;
-  return {
-    a, b, op: "+", answer, mode, hasCarry: true,
-    hint: buildAddHint(a, b, answer, true),
-  };
+  return { a, b, op: "+", answer, mode: "vertical", hasCarry: true, hint: buildAddHint(a, b, answer, true) };
 }
 
-function genSubNoBorrow(): VerticalMathQuestion {
+function genVerticalSubNoBorrow(): VerticalMathQuestion {
   let a: number, b: number;
   do {
     a = randInt(200, 999);
     b = randInt(100, a - 100);
   } while (checkBorrow(a, b));
-
-  const mode: MathMode = Math.random() < 0.5 ? "vertical" : "horizontal";
   const answer = a - b;
-  return {
-    a, b, op: "-", answer, mode, hasCarry: false,
-    hint: buildSubHint(a, b, answer, false),
-  };
+  return { a, b, op: "-", answer, mode: "vertical", hasCarry: false, hint: buildSubHint(a, b, answer, false) };
 }
 
-function genSubWithBorrow(): VerticalMathQuestion {
+function genVerticalSubWithBorrow(): VerticalMathQuestion {
   let a: number, b: number;
   do {
     a = randInt(200, 999);
     b = randInt(100, a - 10);
   } while (!checkBorrow(a, b));
-
-  const mode: MathMode = Math.random() < 0.5 ? "vertical" : "horizontal";
   const answer = a - b;
-  return {
-    a, b, op: "-", answer, mode, hasCarry: true,
-    hint: buildSubHint(a, b, answer, true),
-  };
+  return { a, b, op: "-", answer, mode: "vertical", hasCarry: true, hint: buildSubHint(a, b, answer, true) };
 }
 
-const generators = [genAddNoCarry, genAddWithCarry, genSubNoBorrow, genSubWithBorrow];
+// --- Horizontal mode: 2-digit numbers (up to 99) ---
+
+function genHorizontalAddNoCarry(): VerticalMathQuestion {
+  let a: number, b: number;
+  do {
+    a = randInt(10, 89);
+    b = randInt(10, 89);
+  } while (checkCarryAdd(a, b) || a + b > 99);
+  const answer = a + b;
+  return { a, b, op: "+", answer, mode: "horizontal", hasCarry: false, hint: buildAddHint(a, b, answer, false) };
+}
+
+function genHorizontalAddWithCarry(): VerticalMathQuestion {
+  let a: number, b: number;
+  do {
+    a = randInt(10, 89);
+    b = randInt(10, 89);
+  } while (!checkCarryAdd(a, b) || a + b > 99);
+  const answer = a + b;
+  return { a, b, op: "+", answer, mode: "horizontal", hasCarry: true, hint: buildAddHint(a, b, answer, true) };
+}
+
+function genHorizontalSubNoBorrow(): VerticalMathQuestion {
+  let a: number, b: number;
+  do {
+    a = randInt(20, 99);
+    b = randInt(10, a - 5);
+  } while (checkBorrow(a, b));
+  const answer = a - b;
+  return { a, b, op: "-", answer, mode: "horizontal", hasCarry: false, hint: buildSubHint(a, b, answer, false) };
+}
+
+function genHorizontalSubWithBorrow(): VerticalMathQuestion {
+  let a: number, b: number;
+  do {
+    a = randInt(20, 99);
+    b = randInt(10, a - 5);
+  } while (!checkBorrow(a, b));
+  const answer = a - b;
+  return { a, b, op: "-", answer, mode: "horizontal", hasCarry: true, hint: buildSubHint(a, b, answer, true) };
+}
+
+const generators = [
+  genVerticalAddNoCarry, genVerticalAddWithCarry,
+  genVerticalSubNoBorrow, genVerticalSubWithBorrow,
+  genHorizontalAddNoCarry, genHorizontalAddWithCarry,
+  genHorizontalSubNoBorrow, genHorizontalSubWithBorrow,
+];
 
 export function generateQuestion(): VerticalMathQuestion {
   return generators[Math.floor(Math.random() * generators.length)]();

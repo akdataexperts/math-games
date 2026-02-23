@@ -52,99 +52,153 @@ export const SIDE_HINTS: Record<SideType, string[]> = {
   ],
 };
 
-const TRIANGLES: TriangleQuestion[] = [
-  // Equilateral (all 60°)
-  {
-    points: [[150, 30], [50, 200], [250, 200]],
-    sides: [7, 7, 7],
-    angles: [60, 60, 60],
-    angleType: "acute",
-    sideType: "equilateral",
-  },
-  {
-    points: [[150, 20], [40, 210], [260, 210]],
-    sides: [9, 9, 9],
-    angles: [60, 60, 60],
-    angleType: "acute",
-    sideType: "equilateral",
-  },
-  // Right isosceles
-  {
-    points: [[50, 200], [50, 50], [200, 200]],
-    sides: [6, 6, 8],
-    angles: [90, 45, 45],
-    angleType: "right",
-    sideType: "isosceles",
-  },
-  // Right scalene
-  {
-    points: [[50, 200], [50, 50], [250, 200]],
-    sides: [5, 8, 9],
-    angles: [90, 32, 58],
-    angleType: "right",
-    sideType: "scalene",
-  },
-  {
-    points: [[40, 210], [40, 60], [220, 210]],
-    sides: [6, 7, 10],
-    angles: [90, 40, 50],
-    angleType: "right",
-    sideType: "scalene",
-  },
-  // Acute isosceles
-  {
-    points: [[150, 30], [60, 190], [240, 190]],
-    sides: [8, 8, 6],
-    angles: [70, 70, 40],
-    angleType: "acute",
-    sideType: "isosceles",
-  },
-  {
-    points: [[150, 40], [70, 200], [230, 200]],
-    sides: [10, 10, 7],
-    angles: [65, 65, 50],
-    angleType: "acute",
-    sideType: "isosceles",
-  },
+function dist(a: [number, number], b: [number, number]): number {
+  return Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2);
+}
+
+function angleDeg(a: [number, number], vertex: [number, number], b: [number, number]): number {
+  const v1x = a[0] - vertex[0];
+  const v1y = a[1] - vertex[1];
+  const v2x = b[0] - vertex[0];
+  const v2y = b[1] - vertex[1];
+  const dot = v1x * v2x + v1y * v2y;
+  const len1 = Math.sqrt(v1x ** 2 + v1y ** 2);
+  const len2 = Math.sqrt(v2x ** 2 + v2y ** 2);
+  const cosA = Math.max(-1, Math.min(1, dot / (len1 * len2)));
+  return Math.round(Math.acos(cosA) * (180 / Math.PI));
+}
+
+function classifyAngles(angles: [number, number, number]): AngleType {
+  if (angles.some((a) => a === 90)) return "right";
+  if (angles.some((a) => a > 90)) return "obtuse";
+  return "acute";
+}
+
+function classifySides(sides: [number, number, number]): SideType {
+  const [a, b, c] = sides;
+  if (a === b && b === c) return "equilateral";
+  if (a === b || b === c || a === c) return "isosceles";
+  return "scalene";
+}
+
+/**
+ * Build a triangle question from 3 points.
+ * Side lengths are shown as simple integers for readability:
+ * we compute pixel distances, find ratios, and map to small integers.
+ */
+function buildTriangle(pts: [[number, number], [number, number], [number, number]]): TriangleQuestion {
+  const [p0, p1, p2] = pts;
+
+  // sides[i] = edge opposite to vertex i
+  // side opposite p0 = p1↔p2, opposite p1 = p0↔p2, opposite p2 = p0↔p1
+  const rawSides: [number, number, number] = [dist(p1, p2), dist(p0, p2), dist(p0, p1)];
+
+  // angles[i] = angle at vertex i
+  const angles: [number, number, number] = [
+    angleDeg(p1, p0, p2),
+    angleDeg(p0, p1, p2),
+    angleDeg(p0, p2, p1),
+  ];
+
+  // Normalize angles to sum to 180
+  const angleSum = angles[0] + angles[1] + angles[2];
+  if (angleSum !== 180) {
+    const diff = 180 - angleSum;
+    const minIdx = angles.indexOf(Math.min(...angles));
+    angles[minIdx] += diff;
+  }
+
+  // Map pixel distances to simple display integers (scale to range ~3-12)
+  const minRaw = Math.min(...rawSides);
+  const scale = 5 / minRaw;
+  const sides: [number, number, number] = [
+    Math.round(rawSides[0] * scale),
+    Math.round(rawSides[1] * scale),
+    Math.round(rawSides[2] * scale),
+  ];
+
+  // For isosceles/equilateral, force equal sides to be truly equal after rounding
+  const sideType = classifySidesFromRaw(rawSides);
+  if (sideType === "equilateral") {
+    const avg = Math.round((sides[0] + sides[1] + sides[2]) / 3);
+    sides[0] = sides[1] = sides[2] = avg;
+  } else if (sideType === "isosceles") {
+    forceIsosceles(rawSides, sides);
+  }
+
+  return {
+    points: [p0, p1, p2],
+    sides,
+    angles,
+    angleType: classifyAngles(angles),
+    sideType: classifySides(sides),
+  };
+}
+
+function classifySidesFromRaw(raw: [number, number, number]): SideType {
+  const tolerance = 0.05;
+  const [a, b, c] = raw;
+  const max = Math.max(a, b, c);
+  const ra = a / max, rb = b / max, rc = c / max;
+  if (Math.abs(ra - rb) < tolerance && Math.abs(rb - rc) < tolerance) return "equilateral";
+  if (Math.abs(ra - rb) < tolerance || Math.abs(rb - rc) < tolerance || Math.abs(ra - rc) < tolerance) return "isosceles";
+  return "scalene";
+}
+
+function forceIsosceles(raw: [number, number, number], sides: [number, number, number]) {
+  const tolerance = 0.05;
+  const max = Math.max(...raw);
+  const ratios = raw.map((r) => r / max);
+  if (Math.abs(ratios[0] - ratios[1]) < tolerance) {
+    const avg = Math.round((sides[0] + sides[1]) / 2);
+    sides[0] = sides[1] = avg;
+  }
+  if (Math.abs(ratios[1] - ratios[2]) < tolerance) {
+    const avg = Math.round((sides[1] + sides[2]) / 2);
+    sides[1] = sides[2] = avg;
+  }
+  if (Math.abs(ratios[0] - ratios[2]) < tolerance) {
+    const avg = Math.round((sides[0] + sides[2]) / 2);
+    sides[0] = sides[2] = avg;
+  }
+}
+
+// Triangles defined only by their coordinates.
+// Sides and angles are computed automatically so they always match the visual.
+const TRIANGLE_POINTS: [[number, number], [number, number], [number, number]][] = [
+  // Equilateral
+  [[150, 25], [50, 198], [250, 198]],
+  [[150, 20], [44, 203], [256, 203]],
+
+  // Right isosceles (right angle at bottom-left)
+  [[50, 200], [50, 50], [200, 200]],
+
+  // Right scalene (right angle at bottom-left)
+  [[50, 200], [50, 60], [240, 200]],
+  [[40, 210], [40, 70], [210, 210]],
+
+  // Right scalene (right angle at bottom-right)
+  [[250, 200], [250, 50], [60, 200]],
+
+  // Acute isosceles (tall, narrow)
+  [[150, 20], [80, 200], [220, 200]],
+  [[150, 30], [75, 195], [225, 195]],
+
   // Acute scalene
-  {
-    points: [[120, 30], [40, 200], [250, 180]],
-    sides: [7, 8, 9],
-    angles: [50, 60, 70],
-    angleType: "acute",
-    sideType: "scalene",
-  },
-  // Obtuse isosceles
-  {
-    points: [[150, 60], [50, 180], [250, 180]],
-    sides: [8, 8, 12],
-    angles: [40, 40, 100],
-    angleType: "obtuse",
-    sideType: "isosceles",
-  },
+  [[100, 30], [40, 200], [230, 195]],
+  [[130, 25], [50, 195], [245, 200]],
+
+  // Obtuse isosceles (wide, flat)
+  [[150, 100], [30, 210], [270, 210]],
+  [[150, 110], [40, 205], [260, 205]],
+
   // Obtuse scalene
-  {
-    points: [[80, 50], [30, 200], [270, 200]],
-    sides: [6, 9, 12],
-    angles: [30, 35, 115],
-    angleType: "obtuse",
-    sideType: "scalene",
-  },
-  {
-    points: [[100, 40], [20, 190], [260, 210]],
-    sides: [5, 10, 11],
-    angles: [25, 45, 110],
-    angleType: "obtuse",
-    sideType: "scalene",
-  },
-  {
-    points: [[120, 50], [40, 210], [280, 190]],
-    sides: [7, 11, 13],
-    angles: [28, 52, 100],
-    angleType: "obtuse",
-    sideType: "scalene",
-  },
+  [[70, 40], [30, 210], [270, 200]],
+  [[90, 50], [20, 200], [260, 210]],
+  [[60, 55], [35, 205], [280, 195]],
 ];
+
+const TRIANGLES: TriangleQuestion[] = TRIANGLE_POINTS.map(buildTriangle);
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -159,7 +213,7 @@ export function getTriangleQuestions(count: number): TriangleQuestion[] {
   const shuffled = shuffle(TRIANGLES);
   const result: TriangleQuestion[] = [];
   while (result.length < count) {
-    result.push(...shuffled);
+    result.push(...shuffle(TRIANGLES));
   }
   return result.slice(0, count);
 }

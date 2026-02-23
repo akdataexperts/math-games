@@ -12,33 +12,37 @@ export default function TriangleSVG({ triangle, showAngles, highlightResult }: T
 
   const pathD = `M ${p0[0]} ${p0[1]} L ${p1[0]} ${p1[1]} L ${p2[0]} ${p2[1]} Z`;
 
-  const midpoint = (a: number[], b: number[]): [number, number] => [
+  const mid = (a: number[], b: number[]): [number, number] => [
     (a[0] + b[0]) / 2,
     (a[1] + b[1]) / 2,
   ];
-
-  const offset = (mid: [number, number], center: [number, number], dist: number): [number, number] => {
-    const dx = mid[0] - center[0];
-    const dy = mid[1] - center[1];
-    const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    return [mid[0] + (dx / len) * dist, mid[1] + (dy / len) * dist];
-  };
 
   const center: [number, number] = [
     (p0[0] + p1[0] + p2[0]) / 3,
     (p0[1] + p1[1] + p2[1]) / 3,
   ];
 
-  const sideEdges: [[number, number], number][] = [
-    [offset(midpoint(p0, p1), center, 18), sides[0]],
-    [offset(midpoint(p1, p2), center, 18), sides[1]],
-    [offset(midpoint(p2, p0), center, 18), sides[2]],
+  const pushAway = (pt: [number, number], from: [number, number], dist: number): [number, number] => {
+    const dx = pt[0] - from[0];
+    const dy = pt[1] - from[1];
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    return [pt[0] + (dx / len) * dist, pt[1] + (dy / len) * dist];
+  };
+
+  // sides[i] is opposite vertex i, so:
+  // sides[0] → edge p1↔p2 (opposite p0)
+  // sides[1] → edge p0↔p2 (opposite p1)
+  // sides[2] → edge p0↔p1 (opposite p2)
+  const sideEdges: { pos: [number, number]; label: number; a: number[]; b: number[] }[] = [
+    { pos: pushAway(mid(p1, p2), center, 18), label: sides[0], a: p1, b: p2 },
+    { pos: pushAway(mid(p0, p2), center, 18), label: sides[1], a: p0, b: p2 },
+    { pos: pushAway(mid(p0, p1), center, 18), label: sides[2], a: p0, b: p1 },
   ];
 
   const hasRightAngle = angles.includes(90);
   const rightAngleIdx = angles.indexOf(90);
 
-  const equalSides = sides.filter((s, i, arr) => arr.indexOf(s) !== arr.lastIndexOf(s));
+  const equalSides = sides.filter((s, _i, arr) => arr.indexOf(s) !== arr.lastIndexOf(s));
   const equalLength = equalSides.length > 0 ? equalSides[0] : null;
 
   return (
@@ -76,39 +80,37 @@ export default function TriangleSVG({ triangle, showAngles, highlightResult }: T
       })()}
 
       {/* Side length labels */}
-      {sideEdges.map(([pos, len], i) => (
+      {sideEdges.map((edge, i) => (
         <text
           key={`side-${i}`}
-          x={pos[0]}
-          y={pos[1]}
+          x={edge.pos[0]}
+          y={edge.pos[1]}
           textAnchor="middle"
           dominantBaseline="middle"
           className="text-sm font-bold"
-          fill={equalLength !== null && len === equalLength ? "#34d399" : "#93c5fd"}
+          fill={equalLength !== null && edge.label === equalLength ? "#34d399" : "#93c5fd"}
         >
-          {len}
+          {edge.label}
         </text>
       ))}
 
       {/* Tick marks for equal sides */}
       {equalLength !== null &&
-        sides.map((s, i) => {
-          if (s !== equalLength) return null;
-          const a = points[i];
-          const b = points[(i + 1) % 3];
-          const mid = midpoint(a, b);
-          const dx = b[0] - a[0];
-          const dy = b[1] - a[1];
+        sideEdges.map((edge, i) => {
+          if (edge.label !== equalLength) return null;
+          const m = mid(edge.a, edge.b);
+          const dx = edge.b[0] - edge.a[0];
+          const dy = edge.b[1] - edge.a[1];
           const len = Math.sqrt(dx * dx + dy * dy) || 1;
           const nx = -dy / len;
           const ny = dx / len;
           return (
             <line
               key={`tick-${i}`}
-              x1={mid[0] + nx * 5}
-              y1={mid[1] + ny * 5}
-              x2={mid[0] - nx * 5}
-              y2={mid[1] - ny * 5}
+              x1={m[0] + nx * 5}
+              y1={m[1] + ny * 5}
+              x2={m[0] - nx * 5}
+              y2={m[1] - ny * 5}
               stroke="#34d399"
               strokeWidth="2"
             />
@@ -118,12 +120,8 @@ export default function TriangleSVG({ triangle, showAngles, highlightResult }: T
       {/* Angle labels */}
       {showAngles &&
         angles.map((angle, i) => {
-          const vertex = points[i];
-          const anglePos = offset(
-            [vertex[0], vertex[1]] as [number, number],
-            center,
-            -20
-          );
+          const vertex: [number, number] = [points[i][0], points[i][1]];
+          const anglePos = pushAway(vertex, center, -25);
           return (
             <text
               key={`angle-${i}`}
