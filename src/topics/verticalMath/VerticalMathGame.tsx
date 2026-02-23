@@ -103,22 +103,17 @@ export default function VerticalMathGame({ onBack }: VerticalMathGameProps) {
       <Layout title="חיבור וחיסור במאונך" onBack={onBack}>
         <div className="mx-auto max-w-lg text-center">
           <div className="animate-float mb-6 text-8xl">📝</div>
-          <h2 className="mb-4 text-3xl font-bold">חיבור וחיסור</h2>
+          <h2 className="mb-4 text-3xl font-bold">חיבור וחיסור במאונך</h2>
           <p className="mb-4 text-lg text-white/70">
-            תרגילים במאונך ובמאוזן - עם ובלי המרה
+            תרגילים במאונך - עם ובלי המרה
           </p>
-          <div className="mb-8 flex justify-center gap-6">
-            <div className="rounded-2xl bg-white/10 p-4">
-              <div className="font-mono text-xl" dir="ltr">
+          <div className="mb-8 flex justify-center">
+            <div className="rounded-2xl bg-white/10 p-5">
+              <div className="font-mono text-2xl" dir="ltr">
                 <div>&nbsp;345</div>
                 <div>+278</div>
                 <div className="border-t border-white/30">????</div>
               </div>
-              <p className="mt-1 text-xs text-white/50">במאונך</p>
-            </div>
-            <div className="flex items-center rounded-2xl bg-white/10 p-4">
-              <div className="text-xl" dir="ltr">345 + 278 = ?</div>
-              <p className="mr-2 text-xs text-white/50">במאוזן</p>
             </div>
           </div>
           <button
@@ -177,36 +172,25 @@ export default function VerticalMathGame({ onBack }: VerticalMathGameProps) {
             isCorrect === true ? "ring-4 ring-green-400" : isCorrect === false ? "animate-shake ring-4 ring-red-400" : ""
           }`}
         >
-          {/* Mode badge */}
-          <div className="mb-3 flex justify-center gap-2">
-            <span className={`rounded-full px-3 py-1 text-xs font-medium ${
-              question.mode === "vertical" ? "bg-teal-500/20 text-teal-300" : "bg-cyan-500/20 text-cyan-300"
-            }`}>
-              {question.mode === "vertical" ? "📐 במאונך" : "↔️ במאוזן"}
-            </span>
-            {question.mode === "vertical" && question.hasCarry && (
+          {/* Badge */}
+          {question.hasCarry && (
+            <div className="mb-3 flex justify-center">
               <span className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-medium text-amber-300">
                 {question.op === "+" ? "⚡ עם המרה" : "⚡ עם פריטה"}
               </span>
-            )}
-          </div>
-
-          {/* Question display */}
-          {question.mode === "vertical" ? (
-            <div className="mb-6">
-              <VerticalDisplay
-                a={question.a}
-                b={question.b}
-                op={question.op}
-                answer={question.answer}
-                showAnswer={phase === "feedback"}
-              />
-            </div>
-          ) : (
-            <div className="mb-6 text-4xl font-bold tracking-wider" dir="ltr">
-              {question.a} {question.op} {question.b} = ?
             </div>
           )}
+
+          {/* Vertical question display */}
+          <div className="mb-6">
+            <VerticalDisplay
+              a={question.a}
+              b={question.b}
+              op={question.op}
+              answer={question.answer}
+              showAnswer={phase === "feedback"}
+            />
+          </div>
 
           {phase === "playing" && (
             <div>
@@ -240,11 +224,6 @@ export default function VerticalMathGame({ onBack }: VerticalMathGameProps) {
               >
                 {feedbackMsg}
               </p>
-              {!isCorrect && question.mode === "horizontal" && (
-                <p className="mb-2 text-2xl text-white/90">
-                  <span className="font-bold text-yellow-300" dir="ltr">{question.a} {question.op} {question.b} = {question.answer}</span>
-                </p>
-              )}
               <button
                 onClick={handleNext}
                 className="mt-4 rounded-xl bg-gradient-to-l from-teal-500 to-cyan-600 px-10 py-3 text-lg font-bold transition hover:scale-105"
@@ -255,7 +234,7 @@ export default function VerticalMathGame({ onBack }: VerticalMathGameProps) {
           )}
         </div>
 
-        {phase === "feedback" && !isCorrect && question.mode === "vertical" && (
+        {phase === "feedback" && !isCorrect && (
           <VerticalSolution
             a={question.a}
             b={question.b}

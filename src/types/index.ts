@@ -59,7 +59,7 @@ export const TOPICS: Topic[] = [
   {
     id: "verticalMath",
     name: "חיבור וחיסור במאונך",
-    description: "תרגילים במאונך ובמאוזן עם ובלי המרה",
+    description: "תרגילים במאונך עם ובלי המרה",
     icon: "📝",
     gradient: "from-teal-500 to-cyan-600",
   },
