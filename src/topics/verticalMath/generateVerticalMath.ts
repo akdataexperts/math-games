@@ -42,32 +42,8 @@ function checkBorrow(a: number, b: number): boolean {
   return false;
 }
 
-function buildAddHint(a: number, b: number, answer: number, hasCarry: boolean): string[] {
-  const lines: string[] = [`${a} + ${b} = ?`];
-  if (hasCarry) {
-    lines.push("שימו לב: יש המרה (נשאה)!");
-    const aOnes = a % 10, bOnes = b % 10;
-    const onesSum = aOnes + bOnes;
-    if (onesSum >= 10) {
-      lines.push(`יחידות: ${aOnes} + ${bOnes} = ${onesSum} → כותבים ${onesSum % 10} ומעבירים 1`);
-    }
-  }
-  lines.push(`התשובה: ${a} + ${b} = ${answer}`);
-  return lines;
-}
-
-function buildSubHint(a: number, b: number, answer: number, hasBorrow: boolean): string[] {
-  const lines: string[] = [`${a} - ${b} = ?`];
-  if (hasBorrow) {
-    lines.push("שימו לב: יש פריטה (הלוואה)!");
-    const aOnes = a % 10, bOnes = b % 10;
-    if (aOnes < bOnes) {
-      lines.push(`יחידות: ${aOnes} < ${bOnes} → לוקחים 1 מהעשרות`);
-      lines.push(`${aOnes + 10} - ${bOnes} = ${aOnes + 10 - bOnes}`);
-    }
-  }
-  lines.push(`התשובה: ${a} - ${b} = ${answer}`);
-  return lines;
+function buildHorizontalHint(a: number, b: number, op: MathOp, answer: number): string[] {
+  return [`התשובה: ${a} ${op} ${b} = ${answer}`];
 }
 
 // --- Vertical mode: 3-digit numbers (100-999) ---
@@ -79,7 +55,7 @@ function genVerticalAddNoCarry(): VerticalMathQuestion {
     b = randInt(100, 899);
   } while (checkCarryAdd(a, b) || a + b > 999);
   const answer = a + b;
-  return { a, b, op: "+", answer, mode: "vertical", hasCarry: false, hint: buildAddHint(a, b, answer, false) };
+  return { a, b, op: "+", answer, mode: "vertical", hasCarry: false, hint: [] };
 }
 
 function genVerticalAddWithCarry(): VerticalMathQuestion {
@@ -89,7 +65,7 @@ function genVerticalAddWithCarry(): VerticalMathQuestion {
     b = randInt(100, 899);
   } while (!checkCarryAdd(a, b) || a + b > 9999);
   const answer = a + b;
-  return { a, b, op: "+", answer, mode: "vertical", hasCarry: true, hint: buildAddHint(a, b, answer, true) };
+  return { a, b, op: "+", answer, mode: "vertical", hasCarry: true, hint: [] };
 }
 
 function genVerticalSubNoBorrow(): VerticalMathQuestion {
@@ -99,7 +75,7 @@ function genVerticalSubNoBorrow(): VerticalMathQuestion {
     b = randInt(100, a - 100);
   } while (checkBorrow(a, b));
   const answer = a - b;
-  return { a, b, op: "-", answer, mode: "vertical", hasCarry: false, hint: buildSubHint(a, b, answer, false) };
+  return { a, b, op: "-", answer, mode: "vertical", hasCarry: false, hint: [] };
 }
 
 function genVerticalSubWithBorrow(): VerticalMathQuestion {
@@ -109,7 +85,7 @@ function genVerticalSubWithBorrow(): VerticalMathQuestion {
     b = randInt(100, a - 10);
   } while (!checkBorrow(a, b));
   const answer = a - b;
-  return { a, b, op: "-", answer, mode: "vertical", hasCarry: true, hint: buildSubHint(a, b, answer, true) };
+  return { a, b, op: "-", answer, mode: "vertical", hasCarry: true, hint: [] };
 }
 
 // --- Horizontal mode: 2-digit numbers (up to 99) ---
@@ -121,7 +97,7 @@ function genHorizontalAddNoCarry(): VerticalMathQuestion {
     b = randInt(10, 89);
   } while (checkCarryAdd(a, b) || a + b > 99);
   const answer = a + b;
-  return { a, b, op: "+", answer, mode: "horizontal", hasCarry: false, hint: buildAddHint(a, b, answer, false) };
+  return { a, b, op: "+", answer, mode: "horizontal", hasCarry: false, hint: buildHorizontalHint(a, b, "+", answer) };
 }
 
 function genHorizontalAddWithCarry(): VerticalMathQuestion {
@@ -131,7 +107,7 @@ function genHorizontalAddWithCarry(): VerticalMathQuestion {
     b = randInt(10, 89);
   } while (!checkCarryAdd(a, b) || a + b > 99);
   const answer = a + b;
-  return { a, b, op: "+", answer, mode: "horizontal", hasCarry: true, hint: buildAddHint(a, b, answer, true) };
+  return { a, b, op: "+", answer, mode: "horizontal", hasCarry: true, hint: buildHorizontalHint(a, b, "+", answer) };
 }
 
 function genHorizontalSubNoBorrow(): VerticalMathQuestion {
@@ -141,7 +117,7 @@ function genHorizontalSubNoBorrow(): VerticalMathQuestion {
     b = randInt(10, a - 5);
   } while (checkBorrow(a, b));
   const answer = a - b;
-  return { a, b, op: "-", answer, mode: "horizontal", hasCarry: false, hint: buildSubHint(a, b, answer, false) };
+  return { a, b, op: "-", answer, mode: "horizontal", hasCarry: false, hint: buildHorizontalHint(a, b, "-", answer) };
 }
 
 function genHorizontalSubWithBorrow(): VerticalMathQuestion {
@@ -151,7 +127,7 @@ function genHorizontalSubWithBorrow(): VerticalMathQuestion {
     b = randInt(10, a - 5);
   } while (!checkBorrow(a, b));
   const answer = a - b;
-  return { a, b, op: "-", answer, mode: "horizontal", hasCarry: true, hint: buildSubHint(a, b, answer, true) };
+  return { a, b, op: "-", answer, mode: "horizontal", hasCarry: true, hint: buildHorizontalHint(a, b, "-", answer) };
 }
 
 const generators = [

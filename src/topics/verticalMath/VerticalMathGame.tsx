@@ -3,7 +3,7 @@ import Layout from "../../components/Layout";
 import ProgressBar from "../../components/ProgressBar";
 import StarRating from "../../components/StarRating";
 import Celebration from "../../components/Celebration";
-import HintBox from "../../components/HintBox";
+import VerticalSolution from "./VerticalSolution";
 import { getStars, getRandomEncouragement, getRandomWrongMessage } from "../../types";
 import { generateQuestions, type VerticalMathQuestion } from "./generateVerticalMath";
 
@@ -184,7 +184,7 @@ export default function VerticalMathGame({ onBack }: VerticalMathGameProps) {
             }`}>
               {question.mode === "vertical" ? "📐 במאונך" : "↔️ במאוזן"}
             </span>
-            {question.hasCarry && (
+            {question.mode === "vertical" && question.hasCarry && (
               <span className="rounded-full bg-amber-500/20 px-3 py-1 text-xs font-medium text-amber-300">
                 {question.op === "+" ? "⚡ עם המרה" : "⚡ עם פריטה"}
               </span>
@@ -241,8 +241,8 @@ export default function VerticalMathGame({ onBack }: VerticalMathGameProps) {
                 {feedbackMsg}
               </p>
               {!isCorrect && question.mode === "horizontal" && (
-                <p className="mb-2 text-xl text-white/90">
-                  התשובה הנכונה: <span className="font-bold text-yellow-300">{question.answer}</span>
+                <p className="mb-2 text-2xl text-white/90">
+                  <span className="font-bold text-yellow-300" dir="ltr">{question.a} {question.op} {question.b} = {question.answer}</span>
                 </p>
               )}
               <button
@@ -255,7 +255,14 @@ export default function VerticalMathGame({ onBack }: VerticalMathGameProps) {
           )}
         </div>
 
-        {phase === "feedback" && !isCorrect && <HintBox lines={question.hint} />}
+        {phase === "feedback" && !isCorrect && question.mode === "vertical" && (
+          <VerticalSolution
+            a={question.a}
+            b={question.b}
+            op={question.op}
+            answer={question.answer}
+          />
+        )}
       </div>
     </Layout>
   );
